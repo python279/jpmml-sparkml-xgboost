@@ -17,35 +17,33 @@
  * along with JPMML-SparkML.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.jpmml.sparkml.xgboost;
+import java.util.Map;
 
-import java.util.function.Predicate;
-
-import org.dmg.pmml.FieldName;
-import org.jpmml.evaluator.Batch;
-import org.jpmml.evaluator.FloatEquivalence;
-import org.jpmml.evaluator.IntegrationTest;
+import org.dmg.pmml.general_regression.GeneralRegressionModel;
+import org.jpmml.evaluator.testing.PMMLEquivalence;
+import org.jpmml.sparkml.model.HasRegressionTableOptions;
 import org.junit.Test;
 
-public class XGBoostTest extends IntegrationTest {
-
-	public XGBoostTest(){
-		super(new FloatEquivalence(2));
-	}
+public class XGBoostTest extends ConverterTest {
+//	@Override
+//	public Map<String, Object> getOptions(String name, String dataset){
+//		Map<String, Object> options = super.getOptions(name, dataset);
+//
+//		if(("LogisticRegression").equals(name) && ("Audit").equals(dataset)){
+//			options.put(HasRegressionTableOptions.OPTION_REPRESENTATION, GeneralRegressionModel.class.getSimpleName());
+//		}
+//
+//		return options;
+//	}
 
 	@Test
 	public void evaluateAudit() throws Exception {
-		evaluate("XGBoost", "Audit", new FloatEquivalence(128));
+		evaluate("XGBoost", "Audit");
 	}
 
 	@Test
 	public void evaluateAuto() throws Exception {
 		evaluate("XGBoost", "Auto");
 	}
-
-	@Override
-	protected Batch createBatch(String name, String dataset, Predicate<FieldName> predicate){
-		predicate = excludeFields(FieldName.create("prediction"), FieldName.create("pmml(prediction)"));
-
-		return super.createBatch(name, dataset, predicate);
-	}
 }
+
