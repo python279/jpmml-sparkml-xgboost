@@ -26,7 +26,7 @@ df = {
   }
   df
 }
-val formula = new RFormula().setFormula("mpg ~ .")
+val formula = new RFormula().setFormula("mpg ~ .").setHandleInvalid("keep")
 var regressor = new XGBoostRegressor(Map("objective" -> "reg:squarederror", "num_round" -> 101, "missing" -> 0.0, "allow_non_zero_missing" -> "true")).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
 val pipeline = new Pipeline().setStages(Array(formula, regressor))
 val pipelineModel = pipeline.fit(df)
@@ -36,7 +36,7 @@ pipelineModel.write.overwrite.save("pipeline/XGBoostAuto")
 //xgbDf = xgbDf.selectExpr("prediction as mpg")
 //xgbDf.coalesce(1).write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save("csv/XGBoostAuto.csv")
 
-var precision = 1e-14
+var precision = 1e-1
 var zeroThreshold = 1e-14
 val pmmlBytes = new PMMLBuilder(df.schema, pipelineModel).verify(df, precision, zeroThreshold).buildByteArray()
 Files.write(Paths.get("pmml/XGBoostAuto.pmml"), pmmlBytes)

@@ -1,3 +1,4 @@
+
 import java.nio.file.{Files, Paths}
 import java.io._
 import java.io.{FileReader, BufferedReader}
@@ -26,20 +27,19 @@ df = {
   }
   df
 }
-val formula = new RFormula().setFormula("Adjusted ~ .").setFeaturesCol("features").setLabelCol("label")
-val classifier = new XGBoostClassifier(Map("objective" -> "binary:logistic", "num_round" -> 10, "missing" -> 0.0, "allow_non_zero_missing" -> "true")).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
+val formula = new RFormula().setFormula("Adjusted ~ .").setFeaturesCol("features").setLabelCol("label").setHandleInvalid("keep")
+val classifier = new XGBoostClassifier(Map("objective" -> "binary:logistic", "num_round" -> 101, "missing" -> 0.0, "allow_non_zero_missing" -> "true")).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
 val pipeline = new Pipeline().setStages(Array(formula, classifier))
 val pipelineModel = pipeline.fit(df)
 pipelineModel.write.overwrite.save("pipeline/XGBoostAudit")
-
 //var xgbDf = pipelineModel.transform(df)
 //val vectorToColumn = udf{ (vec: Vector, index: Int) => vec(index).toFloat }
-//xgbDf = xgbDf.selectExpr("prediction as Adjusted", "probability")
-//xgbDf = xgbDf.withColumn("AdjustedTmp", xgbDf("Adjusted").cast(IntegerType).cast(StringType)).drop("Adjusted").withColumnRenamed("AdjustedTmp", "Adjusted")
+//xgbDf = xgbDf.selectExpr("Adjusted", "prediction", "probability")
+//xgbDf = xgbDf.withColumn("predictionTmp", xgbDf("prediction").cast(IntegerType).cast(StringType)).drop("prediction").withColumnRenamed("predictionTmp", "prediction")
 //xgbDf = xgbDf.withColumn("probability(0)", vectorToColumn(xgbDf("probability"), lit(0))).withColumn("probability(1)", vectorToColumn(xgbDf("probability"), lit(1))).drop("probability")
 //xgbDf.coalesce(1).write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save("csv/XGBoostAudit.csv")
 
-var precision = 1e-14
+var precision = 1e-1
 var zeroThreshold = 1e-14
 val pmmlBytes = new PMMLBuilder(df.schema, pipelineModel).verify(df, precision, zeroThreshold).buildByteArray()
 Files.write(Paths.get("pmml/XGBoostAudit.pmml"), pmmlBytes)

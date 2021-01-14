@@ -33,6 +33,8 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;
+import org.jpmml.evaluator.Evaluator;
+import org.jpmml.evaluator.ModelEvaluatorBuilder;
 import org.jpmml.evaluator.ResultField;
 import org.jpmml.evaluator.testing.ArchiveBatch;
 import org.jpmml.evaluator.testing.IntegrationTest;
@@ -143,7 +145,7 @@ public class ConverterTest extends IntegrationTest {
 
 				Map<String, Object> options = getOptions(getName(), getDataset());
 
-				double precision = 1e-14;
+				double precision = 1e-1;
 				double zeroThreshold = 1e-14;
 
 				if(equivalence instanceof PMMLEquivalence){
@@ -158,8 +160,11 @@ public class ConverterTest extends IntegrationTest {
 					.verify(dataset, precision, zeroThreshold);
 
 				PMML pmml = pmmlBuilder.build();
-
 				validatePMML(pmml);
+				ModelEvaluatorBuilder evaluatorBuilder = new ModelEvaluatorBuilder(pmml);
+				Evaluator evaluator = evaluatorBuilder.build();
+				// Perform self-testing
+				evaluator.verify();
 
 				for(File tmpResource : tmpResources){
 					MoreFiles.deleteRecursively(tmpResource.toPath());

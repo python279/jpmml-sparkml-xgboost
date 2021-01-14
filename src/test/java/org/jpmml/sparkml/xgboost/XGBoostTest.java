@@ -37,12 +37,12 @@ public class XGBoostTest extends ConverterTest {
 //	}
 
 	@Test
-	public void evaluateAudit() throws Exception {
+	public void evaluateXGBoostAudit() throws Exception {
 		evaluate("XGBoost", "Audit");
 	}
 
 	@Test
-	public void evaluateAuto() throws Exception {
+	public void evaluateXGBoostAuto() throws Exception {
 		evaluate("XGBoost", "Auto");
 	}
 }

@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>org.jpmml</groupId>
 			<artifactId>jpmml-sparkml</artifactId>
-			<version>1.5-SNAPSHOT</version>
+			<version>1.5.9</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -180,7 +180,7 @@
 				<configuration>
 					<argLine>${jacoco.agent}</argLine>
 					<trimStackTrace>false</trimStackTrace>
-					<debugForkedProcess>true</debugForkedProcess>
+<!--					<debugForkedProcess>true</debugForkedProcess>-->
 				</configuration>
 			</plugin>
 			<plugin>
