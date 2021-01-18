@@ -11,6 +11,8 @@ import org.apache.spark.sql.types.{IntegerType, DoubleType, StringType, DataType
 import ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier
 import org.jpmml.sparkml.PMMLBuilder
 import org.jpmml.sparkml.model.HasRegressionTableOptions
+import org.jpmml.sparkml.xgboost.SparseToDenseTransformer
+import org.apache.spark.sql.functions.udf
 
 var df = spark.read.option("header", "true").option("inferSchema", "true").csv("csv/Audit.csv")
 val schema = {
@@ -28,18 +30,26 @@ df = {
   df
 }
 val formula = new RFormula().setFormula("Adjusted ~ .").setFeaturesCol("features").setLabelCol("label").setHandleInvalid("keep")
-val classifier = new XGBoostClassifier(Map("objective" -> "binary:logistic", "num_round" -> 101, "missing" -> 0.0, "allow_non_zero_missing" -> "true")).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
-val pipeline = new Pipeline().setStages(Array(formula, classifier))
+val sparse2dense = new SparseToDenseTransformer().setInputCol(formula.getFeaturesCol).setOutputCol("denseFeatures")
+val classifier = new XGBoostClassifier(Map("objective" -> "binary:logistic", "num_round" -> 101)).setLabelCol(formula.getLabelCol).setFeaturesCol(sparse2dense.getOutputCol)
+val pipeline = new Pipeline().setStages(Array(formula, sparse2dense, classifier))
 val pipelineModel = pipeline.fit(df)
 pipelineModel.write.overwrite.save("pipeline/XGBoostAudit")
-//var xgbDf = pipelineModel.transform(df)
-//val vectorToColumn = udf{ (vec: Vector, index: Int) => vec(index).toFloat }
-//xgbDf = xgbDf.selectExpr("Adjusted", "prediction", "probability")
-//xgbDf = xgbDf.withColumn("predictionTmp", xgbDf("prediction").cast(IntegerType).cast(StringType)).drop("prediction").withColumnRenamed("predictionTmp", "prediction")
-//xgbDf = xgbDf.withColumn("probability(0)", vectorToColumn(xgbDf("probability"), lit(0))).withColumn("probability(1)", vectorToColumn(xgbDf("probability"), lit(1))).drop("probability")
-//xgbDf.coalesce(1).write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save("csv/XGBoostAudit.csv")
 
+val handleMissing = udf({x: String => {
+  if (x == null) {
+    "__unknown"
+  } else {
+    x
+  }
+}})
+df = {
+  for(field <- fields.filter(field => field.dataType.isInstanceOf[StringType])){
+    df = df.withColumn(field.name, handleMissing(df(field.name)))
+  }
+  df
+}
 var precision = 1e-1
-var zeroThreshold = 1e-14
+var zeroThreshold = 1e-1
 val pmmlBytes = new PMMLBuilder(df.schema, pipelineModel).verify(df, precision, zeroThreshold).buildByteArray()
 Files.write(Paths.get("pmml/XGBoostAudit.pmml"), pmmlBytes)

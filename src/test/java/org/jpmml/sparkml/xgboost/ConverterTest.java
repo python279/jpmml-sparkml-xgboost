@@ -140,20 +140,20 @@ public class ConverterTest extends IntegrationTest {
 						dataset = dataset.withColumn("tmp_" + field.name(), column).drop(field.name()).withColumnRenamed("tmp_" + field.name(), field.name());
 					}
 
-					dataset = dataset.sample(false, 0.05d, 63317);
+					dataset = dataset.sample(false, 0.1, 63317);
 				}
 
 				Map<String, Object> options = getOptions(getName(), getDataset());
 
-				double precision = 1e-1;
+				double precision = 1e-14;
 				double zeroThreshold = 1e-14;
 
-				if(equivalence instanceof PMMLEquivalence){
-					PMMLEquivalence pmmlEquivalence = (PMMLEquivalence)equivalence;
-
-					precision = pmmlEquivalence.getPrecision();
-					zeroThreshold = pmmlEquivalence.getZeroThreshold();
-				}
+//				if(equivalence instanceof PMMLEquivalence){
+//					PMMLEquivalence pmmlEquivalence = (PMMLEquivalence)equivalence;
+//
+//					precision = pmmlEquivalence.getPrecision();
+//					zeroThreshold = pmmlEquivalence.getZeroThreshold();
+//				}
 
 				PMMLBuilder pmmlBuilder = new PMMLBuilder(schema, pipelineModel)
 					.putOptions(options)

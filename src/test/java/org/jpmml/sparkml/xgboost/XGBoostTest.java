@@ -17,24 +17,23 @@
  * along with JPMML-SparkML.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.jpmml.sparkml.xgboost;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.dmg.pmml.general_regression.GeneralRegressionModel;
 import org.jpmml.evaluator.testing.PMMLEquivalence;
 import org.jpmml.sparkml.model.HasRegressionTableOptions;
+import org.jpmml.xgboost.HasXGBoostOptions;
 import org.junit.Test;
 
 public class XGBoostTest extends ConverterTest {
-//	@Override
-//	public Map<String, Object> getOptions(String name, String dataset){
-//		Map<String, Object> options = super.getOptions(name, dataset);
-//
-//		if(("LogisticRegression").equals(name) && ("Audit").equals(dataset)){
-//			options.put(HasRegressionTableOptions.OPTION_REPRESENTATION, GeneralRegressionModel.class.getSimpleName());
-//		}
-//
-//		return options;
-//	}
+	@Override
+	public Map<String, Object> getOptions(String name, String dataset){
+		Map<String, Object> options = new LinkedHashMap<>();
+		options.put(HasXGBoostOptions.OPTION_COMPACT, Boolean.TRUE);
+
+		return options;
+	}
 
 	@Test
 	public void evaluateXGBoostAudit() throws Exception {

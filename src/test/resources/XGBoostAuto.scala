@@ -10,6 +10,8 @@ import org.apache.spark.sql.types.{IntegerType, DoubleType, StringType, DataType
 import ml.dmlc.xgboost4j.scala.spark.XGBoostRegressor
 import org.jpmml.sparkml.PMMLBuilder
 import org.jpmml.sparkml.model.HasRegressionTableOptions
+import org.jpmml.sparkml.xgboost.SparseToDenseTransformer
+import org.apache.spark.sql.functions.udf
 
 var df = spark.read.option("header", "true").option("inferSchema", "true").csv("csv/Auto.csv")
 val schema = {
@@ -27,16 +29,26 @@ df = {
   df
 }
 val formula = new RFormula().setFormula("mpg ~ .").setHandleInvalid("keep")
-var regressor = new XGBoostRegressor(Map("objective" -> "reg:squarederror", "num_round" -> 101, "missing" -> 0.0, "allow_non_zero_missing" -> "true")).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
-val pipeline = new Pipeline().setStages(Array(formula, regressor))
+val sparse2dense = new SparseToDenseTransformer().setInputCol(formula.getFeaturesCol).setOutputCol("denseFeatures")
+var regressor = new XGBoostRegressor(Map("objective" -> "reg:squarederror", "num_round" -> 101)).setLabelCol(formula.getLabelCol).setFeaturesCol(sparse2dense.getOutputCol)
+val pipeline = new Pipeline().setStages(Array(formula, sparse2dense, regressor))
 val pipelineModel = pipeline.fit(df)
 pipelineModel.write.overwrite.save("pipeline/XGBoostAuto")
 
-//var xgbDf = pipelineModel.transform(df)
-//xgbDf = xgbDf.selectExpr("prediction as mpg")
-//xgbDf.coalesce(1).write.mode("overwrite").format("com.databricks.spark.csv").option("header", "true").save("csv/XGBoostAuto.csv")
-
+val handleMissing = udf({x: String => {
+  if (x == null) {
+    "__unknown"
+  } else {
+    x
+  }
+}})
+df = {
+  for(field <- fields.filter(field => field.dataType.isInstanceOf[StringType])){
+    df = df.withColumn(field.name, handleMissing(df(field.name)))
+  }
+  df
+}
 var precision = 1e-1
-var zeroThreshold = 1e-14
+var zeroThreshold = 1e-1
 val pmmlBytes = new PMMLBuilder(df.schema, pipelineModel).verify(df, precision, zeroThreshold).buildByteArray()
 Files.write(Paths.get("pmml/XGBoostAuto.pmml"), pmmlBytes)
