@@ -145,8 +145,8 @@ public class ConverterTest extends IntegrationTest {
 
 				Map<String, Object> options = getOptions(getName(), getDataset());
 
-				double precision = 1e-14;
-				double zeroThreshold = 1e-14;
+				double precision = 1e-1;
+				double zeroThreshold = 1e-1;
 
 //				if(equivalence instanceof PMMLEquivalence){
 //					PMMLEquivalence pmmlEquivalence = (PMMLEquivalence)equivalence;

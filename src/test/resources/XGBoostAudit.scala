@@ -11,7 +11,6 @@ import org.apache.spark.sql.types.{IntegerType, DoubleType, StringType, DataType
 import ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier
 import org.jpmml.sparkml.PMMLBuilder
 import org.jpmml.sparkml.model.HasRegressionTableOptions
-import org.jpmml.sparkml.xgboost.SparseToDenseTransformer
 import org.apache.spark.sql.functions.udf
 
 var df = spark.read.option("header", "true").option("inferSchema", "true").csv("csv/Audit.csv")
@@ -30,9 +29,8 @@ df = {
   df
 }
 val formula = new RFormula().setFormula("Adjusted ~ .").setFeaturesCol("features").setLabelCol("label").setHandleInvalid("keep")
-val sparse2dense = new SparseToDenseTransformer().setInputCol(formula.getFeaturesCol).setOutputCol("denseFeatures")
-val classifier = new XGBoostClassifier(Map("objective" -> "binary:logistic", "num_round" -> 101)).setLabelCol(formula.getLabelCol).setFeaturesCol(sparse2dense.getOutputCol)
-val pipeline = new Pipeline().setStages(Array(formula, sparse2dense, classifier))
+val classifier = new XGBoostClassifier(Map("max_depth" -> 2, "objective" -> "binary:logistic", "num_round" -> 101, "num_workers" -> 2, "allow_non_zero_for_missing" -> "true", "missing" -> Float.NaN)).setLabelCol(formula.getLabelCol).setFeaturesCol(formula.getFeaturesCol)
+val pipeline = new Pipeline().setStages(Array(formula, classifier))
 val pipelineModel = pipeline.fit(df)
 pipelineModel.write.overwrite.save("pipeline/XGBoostAudit")
 
